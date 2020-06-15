@@ -148,7 +148,7 @@ namespace BnsShop
             try
             {
                 bns.Connect(sqlCntStr);
-                MessageBox.Show("连接成功", "提示");
+                MessageBox.Show("连接成功", "提示1");
                 SetCategoriesInTreeView();
             }
             catch (Exception ex)
@@ -161,7 +161,7 @@ namespace BnsShop
         {
             try
             {
-
+                MessageBox.Show("1111", "提示");
 
 
             }
