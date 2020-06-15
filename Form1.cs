@@ -161,7 +161,7 @@ namespace BnsShop
         {
             try
             {
-                MessageBox.Show("1111", "提示");
+                MessageBox.Show("1111111111111111", "提示");
 
 
             }
