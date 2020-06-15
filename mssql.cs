@@ -150,7 +150,6 @@ namespace MSSQL
                 SqlDataAdapter myDataAdapter = new SqlDataAdapter(sqlStr, sqlCnt);
                 DataSet myDataSet = new DataSet();
                 myDataAdapter.Fill(myDataSet, "strtable");
-                sqlCnt.Close();
                 DataTable myTable = myDataSet.Tables["strtable"];
                 Categories = new B_Categories[myTable.Rows.Count];
                 int i = 0;
@@ -176,6 +175,10 @@ namespace MSSQL
             {
                 throw new Exception(ex.Message);
 
+            }
+            finally
+            {
+                sqlCnt.Close();
             }
 
         }
@@ -206,7 +209,6 @@ namespace MSSQL
                 SqlDataAdapter myDataAdapter = new SqlDataAdapter(sqlStr, sqlCnt);
                 DataSet myDataSet = new DataSet();
                 myDataAdapter.Fill(myDataSet, "strtable");
-                sqlCnt.Close();
                 DataTable myTable = myDataSet.Tables["strtable"];
                 GL = new GoodsList[myTable.Rows.Count];
                 int i = 0;
@@ -219,16 +221,17 @@ namespace MSSQL
                     GL[i].SalePrice = Convert.ToInt32(resMin1).ToString();
                     GL[i].SaleStatus = myRow[3].ToString();
                     i++;
-                    //Console.WriteLine(GL[i].GoodsName);
                 }
-
-
 
                 return true;
             }
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
+            }
+            finally
+            {
+                sqlCnt.Close();
             }
         }
 
@@ -249,6 +252,7 @@ namespace MSSQL
                                 "WHERE\n" +
                                 "	GI.GoodsId = " + GoodsId.ToString();
                 SqlCommand cmd = new SqlCommand(sqlStr, sqlCnt);
+                sqlCnt.Open();
                 SqlDataAdapter dataAdapter = new SqlDataAdapter(cmd);
                 DataSet dataSet = new DataSet();
                 dataAdapter.Fill(dataSet);
@@ -271,38 +275,10 @@ namespace MSSQL
             {
                 throw new ArgumentException(ex.Message);
             }
-        }
-        public bool Test()
-        {
-            try
+            finally
             {
-                String sqlStr = "GoodsDb.dbo.p_ListGoodsByGoodsId";
-                sqlCnt.Open();
-                SqlCommand command = new SqlCommand(sqlStr, sqlCnt)
-                {
-                    CommandType = CommandType.StoredProcedure//设置执行类型 为存储过程
-                };
-                //设置存储过程 参数
-                command.Parameters.Add("@GoodsId", SqlDbType.Int);
-                command.Parameters[0].Value = 80404;
-                SqlDataAdapter dataAdapter = new SqlDataAdapter(command);
-                DataSet dataSet = new DataSet();
-                dataAdapter.Fill(dataSet);
-
-                DataTable dataTable = new DataTable();
-                foreach (DataTable db in dataSet.Tables)
-                {
-                    Console.WriteLine(db.TableName.ToString());
-                }
-
-                return true;
+                sqlCnt.Close();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                return false;
-            }
-
         }
 
         public bool AddGoods(GoodsCore goodsCore, GoodsSaleLimitCore goodsSaleLimitCore,
@@ -685,7 +661,6 @@ namespace MSSQL
             }
 
         }
-
         public void AddGoodsChangeCore(ref int retCode, GoodsChangeCore goodsChangeCore)
         {
             try
@@ -727,13 +702,73 @@ namespace MSSQL
                 sqlCnt.Close();
             }
         }
+        public bool SetGoodsPrice(string GoodsId,string Price)
+        {
+            try
+            {
+                string sqlStr = "UPDATE GoodsDb.dbo.GoodsItemBasicPrices SET BasicSalePrice =" + Price + " WHERE GoodsId = " + GoodsId +
+                              "\nUPDATE GoodsDb.dbo.GoodsSalePricePolicies SET SalePrice=" + Price + " WHERE GoodsId = " + GoodsId;
+                SqlCommand cmd = new SqlCommand(sqlStr, sqlCnt);
+                sqlCnt.Open();
+                int ret = cmd.ExecuteNonQuery();
+                sqlCnt.Close();
+                if (ret == 0)
+                {
+                    return false;
+                }
+                int retCode = 0;
+                GoodsChangeCore goodsChangeCore = new GoodsChangeCore(Convert.ToInt32(GoodsId), 2,"AdminiWeilai");
+                AddGoodsChangeCore(ref retCode,goodsChangeCore);
+                return true;
+            }
+            catch (Exception ex)
+            {
 
+                throw new ArgumentException(ex.Message);
+            }
+            finally
+            {
+                sqlCnt.Close();
+            }
+
+
+        }
+        public bool SetGoodsSaleStatus(string GoodsId,string SaleStatus)
+        {
+            try
+            {
+                string sqlStr = "UPDATE GoodsDb.dbo.Goods SET SaleStatus=" + SaleStatus + " WHERE GoodsId=" + GoodsId;
+                SqlCommand cmd = new SqlCommand(sqlStr, sqlCnt);
+                sqlCnt.Open();
+                int ret = cmd.ExecuteNonQuery();
+                sqlCnt.Close();
+                if (ret==0)
+                {
+                    return false;
+                }
+                int retCode = 0;
+                GoodsChangeCore goodsChangeCore = new GoodsChangeCore(Convert.ToInt32(GoodsId), 2, "AdminiWeilai");
+                AddGoodsChangeCore(ref retCode, goodsChangeCore);
+                return true;
+                
+            }
+            catch (Exception ex)
+            {
+
+                throw new ArgumentException(ex.Message);
+            }
+            finally
+            {
+                sqlCnt.Close();
+            }
+        }
         public bool IsGoodsByGoodsId(string GoodsId)
         {
             try
             {
                 string sqlStr = "SELECT GoodsId FROM GoodsDb.dbo.Goods  WHERE GoodsId = " + GoodsId;
                 //SqlCommand cmd = new SqlCommand(sqlStr, sqlCnt);
+                sqlCnt.Open();
                 SqlDataAdapter dataAdapter = new SqlDataAdapter(sqlStr, sqlCnt);
                 DataSet dataSet = new DataSet();
                 dataAdapter.Fill(dataSet);
@@ -744,6 +779,10 @@ namespace MSSQL
             catch (Exception ex)
             {
                 throw new ArgumentException(ex.Message);
+            }
+            finally
+            {
+                sqlCnt.Close();
             }
         }
 
@@ -892,7 +931,6 @@ namespace MSSQL
             }
 
         }
-
         public bool IsItemByItemId(string ItemId)
         {
             try
@@ -912,18 +950,6 @@ namespace MSSQL
             }
         }
 
-
-
-        public void Test1(DataGridView dataGridView)
-        {
-            sqlCnt.Open();
-            string sqlStr = "SELECT * FROM GoodsDb.dbo.Categories WHERE CategoryId <> 40 and ParentCategoryId <> 40 and CategoryData='{\"CategoryType\":[\"01\"]}' ORDER BY  ParentCategoryId ASC,  DisplayOrder ASC";
-            SqlDataAdapter sqlDataAdapter = new SqlDataAdapter(sqlStr, sqlCnt);
-            DataSet dataSet = new DataSet();
-            sqlDataAdapter.Fill(dataSet);
-            dataGridView.DataSource = dataSet.Tables[0].DefaultView;
-            sqlCnt.Close();
-        }
     }
 
 
